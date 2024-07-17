@@ -1,0 +1,2 @@
+// Dellete by many matche
+db.school.deleteMany({ name: "Holberton school" })
