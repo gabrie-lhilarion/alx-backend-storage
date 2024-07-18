@@ -11,6 +11,36 @@ and store data with a unique key.
 import redis
 import uuid
 from typing import Union, Callable, Optional
+from functools import wraps
+
+# Initialize Redis client
+redis_client = redis.Redis()
+
+
+def count_calls(method: Callable) -> Callable:
+    """
+    Decorator to count how many times a method of the Cache class is called.
+
+    Parameters
+    ----------
+    method : Callable
+        The method to be decorated.
+
+    Returns
+    -------
+    Callable
+        The decorated method that increments the call count in Redis.
+    """
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        # Create the key using the qualified name of the method
+        key = f"count:{method.__qualname__}"
+        # Increment the call count for the method
+        self._redis.incr(key)
+        # Call the original method and return its result
+        return method(self, *args, **kwargs)
+
+    return wrapper
 
 
 class Cache:
@@ -42,6 +72,7 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
+    @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """
         Stores data in the Redis cache and returns a unique key.
